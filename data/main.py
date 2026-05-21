@@ -1,6 +1,4 @@
 import duckdb
-import pandas as pd
-import FinanceDataReader as fdr
 
 
 # =========================================================================
@@ -60,62 +58,6 @@ def create_table(con: duckdb.DuckDBPyConnection):
 
     print('[INFO] DuckDB 테이블 생성 완료')
 
-        
-def get_assets_count(con: duckdb.DuckDBPyConnection) -> int:
-    """
-    테이블의 Cardinality (tuple 개수) 반환
-    """
-    return con.execute("SELECT COUNT(*) FROM asset").fetchone()[0]    
-
-
-def save_assets(con: duckdb.DuckDBPyConnection, df: pd.DataFrame):
-    """
-    주식 및 ETF 저장
-    """
-    print('[INFO] asset 저장 시작')
-    con.execute("INSERT OR IGNORE INTO asset SELECT * FROM df")
-    print('[INFO] asset 저장 완료')
-
-# endregion
-
-
-# =========================================================================
-# region: Finance Data Reader
-# =========================================================================
-def fetch_asset_list() -> pd.DataFrame:
-    """
-    asset (주식 및 ETF) 리스트 얻어옴
-    """
-    print('[INFO] FDR asset (주식 및 ETF) 리스트 가져오기 시작')
-
-    # 한국 주식 (KOSPI, KOSDAQ, KONEX)
-    # 컬럼명이 Code임(나머지는 Symbol)
-    kr_stocks = fdr.StockListing('KRX')[['Code', 'Name']]
-    kr_stocks['country'] = 'KR'
-    kr_stocks['type'] = 'Stock'
-    
-    # 순서 변경
-    kr_stocks = kr_stocks[['Code', 'Name', 'type', 'country']]
-    # 컬럼명 변경 (DB의 asset 테이블과 맞춤)
-    kr_stocks.columns = ['ticker', 'name', 'type', 'country']
-
-    print('[INFO] FDR asset (주식 및 ETF) 리스트 가져오기 완료')
-    return kr_stocks
-
-# endregion
-
-
-# =========================================================================
-# region: Service (Business Logic)
-# =========================================================================
-def add_all_assets(con: duckdb.DuckDBPyConnection):
-    count = get_assets_count(con)
-    if count <= 0:
-        df = fetch_asset_list()
-        save_assets(con, df)
-    else:
-        print(f"[INFO] 종목 데이터 개수: {count}")
-
 # endregion
 
 
@@ -126,7 +68,6 @@ def main():
     con = duckdb.connect("data/finance.db")
 
     create_table(con)
-    add_all_assets(con)
 
 
 if __name__ == "__main__":
